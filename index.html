@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OfiLingo - Dashboard de Aprendizaje</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        duoGreen: '#58CC02',
+                        duoGreenDark: '#58A700',
+                        duoBlue: '#1CB0F6',
+                        duoBlueDark: '#1899D6',
+                        duoRed: '#FF4B4B',
+                        duoRedDark: '#EA2B2B',
+                        duoYellow: '#FFC800',
+                        duoYellowDark: '#D4A600',
+                        duoPurple: '#CE82FF',
+                        duoPurpleDark: '#A568CC',
+                        bgLight: '#FFFFFF',
+                        bgDark: '#131F24',
+                        textMain: '#4B4B4B',
+                        textGray: '#AFAFBE',
+                        wordBlue: '#2B579A',
+                        wordBlueDark: '#1D3A63',
+                        excelGreen: '#217346',
+                        excelGreenDark: '#185C37',
+                        mod1: '#58CC02',
+                        mod1Dark: '#46A302',
+                        mod2: '#1CB0F6',
+                        mod2Dark: '#1899D6',
+                        mod3: '#CE82FF',
+                        mod3Dark: '#A568CC',
+                        mod4: '#FF9600',
+                        mod4Dark: '#D47E00',
+                        mod5: '#FF4B4B',
+                        mod5Dark: '#EA2B2B',
+                    },
+                    fontFamily: {
+                        sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif']
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Framer Motion -->
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+
+    <style>
+        :root { --bg: #FFFFFF; --bg-card: #FFFFFF; --bg-sidebar: #FFFFFF; --text: #4B4B4B; --text-gray: #AFAFBE; --border: #E5E5E5; --border-light: #F0F0F0; }
+        body.dark { --bg: #131F24; --bg-card: #1B2B33; --bg-sidebar: #0F1A20; --text: #E2E8F0; --text-gray: #8899A6; --border: #2D3F49; --border-light: #253540; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #E5E5E5;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #AFAFBE;
+        }
+
+        .active-push:active {
+            transform: translateY(4px);
+            box-shadow: none !important;
+            margin-top: 4px;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .float-anim {
+            animation: float 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .pulse-ring::before {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 3px solid currentColor;
+            animation: pulse-ring 1.5s ease-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.3) 50%, transparent 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        .path-line {
+            position: absolute;
+            width: 4px;
+            background: #E5E5E5;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+        const { motion, AnimatePresence } = window.Motion;
+
+        // ========== ICONS ==========
+        const FlameIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFC800" stroke="#D4A600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z" /></svg>;
+        const GemIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="#1CB0F6" stroke="#1899D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 22 22 7 12 2" /></svg>;
+        const HeartIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF4B4B" stroke="#EA2B2B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>;
+        const HomeIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
+        const ShieldIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
+        const StoreIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 7 4.04-4.04A2 2 0 0 1 7.46 2h9.08a2 2 0 0 1 1.42.59L22 7" /><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><path d="M2 7h20" /></svg>;
+        const TargetIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>;
+        const BookIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>;
+        const PencilIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>;
+        const LockIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>;
+        const StarIcon = ({ size = 20, fill = "#FFC800", stroke = "#D4A600" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>;
+        const CrownIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFC800" stroke="#D4A600" strokeWidth="2"><polygon points="2 4 5 15 12 10 19 15 22 4 2 4" /><line x1="2" y1="19" x2="22" y2="19" /></svg>;
+        const CheckCircleIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>;
+        const TrophyIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>;
+
+        const WordLogo = () => (
+            <svg width="40" height="40" viewBox="0 0 48 48" className="drop-shadow-sm">
+                <rect x="8" y="8" width="32" height="32" rx="4" fill="#2B579A" />
+                <path d="M15 14l3 18h4l3-10 3 10h4l3-18h-3.5l-2 12-3-12h-3l-3 12-2-12H15z" fill="#FFF" />
+            </svg>
+        );
+
+        const ExcelLogo = () => (
+            <svg width="40" height="40" viewBox="0 0 48 48" className="drop-shadow-sm">
+                <rect x="8" y="8" width="32" height="32" rx="4" fill="#217346" />
+                <path d="M17 14l5 9-5 9h4l3-5.5L27 32h4l-5-9 5-9h-4l-3 5.5L21 14h-4z" fill="#FFF" />
+            </svg>
+        );
+
+        // ========== MODULES DATA ==========
+        const MODULES_DATA = [
+            {
+                id: 1,
+                title: "Módulo 1: Fundamentos",
+                subtitle: "Primeros pasos con Word",
+                emoji: "🚀",
+                color: "#58CC02",
+                colorDark: "#46A302",
+                bgClass: "from-green-400 to-emerald-600",
+                missions: [
+                    { id: 1, title: "La Interfaz de Word", topic: "Conoce las partes principales de Word", type: "lesson" },
+                    { id: 2, title: "Crear Documento", topic: "Cómo crear un nuevo documento en blanco", type: "lesson" },
+                    { id: 3, title: "Guardar Archivos", topic: "Guarda tu trabajo con Ctrl+S", type: "lesson" },
+                    { id: 4, title: "Abrir Documentos", topic: "Abre archivos existentes", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Básicos", topic: "Repaso de lo aprendido", type: "checkpoint" },
+                    { id: 6, title: "Seleccionar Texto", topic: "Domina la selección de texto", type: "lesson" },
+                    { id: 7, title: "Copiar y Pegar", topic: "Ctrl+C y Ctrl+V", type: "lesson" },
+                    { id: 8, title: "Cortar y Mover", topic: "Reorganiza tu texto con Ctrl+X", type: "lesson" },
+                    { id: 9, title: "Deshacer y Rehacer", topic: "Ctrl+Z es tu mejor amigo", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Edición", topic: "Repaso de edición básica", type: "checkpoint" },
+                    { id: 11, title: "Navegación", topic: "Muévete por el documento", type: "lesson" },
+                    { id: 12, title: "Zoom y Vistas", topic: "Configura tu vista ideal", type: "lesson" },
+                    { id: 13, title: "Regla y Márgenes", topic: "Configura el espacio de trabajo", type: "lesson" },
+                    { id: 14, title: "La Cinta de Opciones", topic: "Explora las pestañas de Word", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Interfaz", topic: "Repaso de la interfaz", type: "checkpoint" },
+                    { id: 16, title: "Atajos Esenciales", topic: "Los atajos que necesitas saber", type: "lesson" },
+                    { id: 17, title: "Buscar y Reemplazar", topic: "Ctrl+H para buscar texto", type: "lesson" },
+                    { id: 18, title: "Ortografía Básica", topic: "Revisa errores ortográficos", type: "lesson" },
+                    { id: 19, title: "Imprimir", topic: "Prepara tu documento para imprimir", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "Demuestra lo que sabes", type: "boss" },
+                ]
+            },
+            {
+                id: 2,
+                title: "Módulo 2: Formato de Texto",
+                subtitle: "Dale estilo a tus letras",
+                emoji: "✨",
+                color: "#1CB0F6",
+                colorDark: "#1899D6",
+                bgClass: "from-blue-400 to-cyan-600",
+                missions: [
+                    { id: 1, title: "Negrita", topic: "Resalta texto con Ctrl+B", type: "lesson" },
+                    { id: 2, title: "Cursiva", topic: "Inclina texto con Ctrl+I", type: "lesson" },
+                    { id: 3, title: "Subrayado", topic: "Subraya con Ctrl+U", type: "lesson" },
+                    { id: 4, title: "Tachado", topic: "Tacha texto cuando necesites", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Estilos básicos", topic: "Repaso de formatos", type: "checkpoint" },
+                    { id: 6, title: "Tamaño de Fuente", topic: "Cambia el tamaño del texto", type: "lesson" },
+                    { id: 7, title: "Tipo de Fuente", topic: "Elige la tipografía perfecta", type: "lesson" },
+                    { id: 8, title: "Color de Fuente", topic: "Dale color a tu texto", type: "lesson" },
+                    { id: 9, title: "Resaltado", topic: "Resalta texto importante", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Fuentes", topic: "Repaso de fuentes y colores", type: "checkpoint" },
+                    { id: 11, title: "Superíndice", topic: "Texto elevado como x²", type: "lesson" },
+                    { id: 12, title: "Subíndice", topic: "Texto bajo como H₂O", type: "lesson" },
+                    { id: 13, title: "Cambiar Mayúsculas", topic: "Alterna entre MAYÚSCULAS y minúsculas", type: "lesson" },
+                    { id: 14, title: "Efectos de Texto", topic: "Sombras, reflejos y más", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Avanzado", topic: "Repaso de formato avanzado", type: "checkpoint" },
+                    { id: 16, title: "Copiar Formato", topic: "El pincel de formato mágico", type: "lesson" },
+                    { id: 17, title: "Borrar Formato", topic: "Limpia todo el formato", type: "lesson" },
+                    { id: 18, title: "WordArt", topic: "Texto decorativo impactante", type: "lesson" },
+                    { id: 19, title: "Combinar Formatos", topic: "Mezcla estilos como un pro", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "Demuestra tu dominio del formato", type: "boss" },
+                ]
+            },
+            {
+                id: 3,
+                title: "Módulo 3: Párrafos",
+                subtitle: "Organiza tu contenido",
+                emoji: "📐",
+                color: "#CE82FF",
+                colorDark: "#A568CC",
+                bgClass: "from-purple-400 to-violet-600",
+                missions: [
+                    { id: 1, title: "Alineación de Texto", topic: "Izquierda, centro, derecha, justificado", type: "lesson" },
+                    { id: 2, title: "Interlineado", topic: "Espacio entre líneas", type: "lesson" },
+                    { id: 3, title: "Espaciado de Párrafo", topic: "Espacio antes y después", type: "lesson" },
+                    { id: 4, title: "Sangría", topic: "Primera línea y sangría francesa", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Espaciado", topic: "Repaso de espaciado", type: "checkpoint" },
+                    { id: 6, title: "Viñetas", topic: "Listas con puntos y símbolos", type: "lesson" },
+                    { id: 7, title: "Listas Numeradas", topic: "Listas ordenadas paso a paso", type: "lesson" },
+                    { id: 8, title: "Listas Multinivel", topic: "Sublistas dentro de listas", type: "lesson" },
+                    { id: 9, title: "Bordes de Párrafo", topic: "Enmarca tu contenido", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Listas", topic: "Repaso de listas y bordes", type: "checkpoint" },
+                    { id: 11, title: "Sombreado", topic: "Fondo de color en párrafos", type: "lesson" },
+                    { id: 12, title: "Tabulaciones", topic: "Alinea texto con Tab", type: "lesson" },
+                    { id: 13, title: "Columnas", topic: "Divide en columnas como periódico", type: "lesson" },
+                    { id: 14, title: "Salto de Página", topic: "Controla dónde inicia la página", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Diseño", topic: "Repaso de diseño", type: "checkpoint" },
+                    { id: 16, title: "Orientación de Página", topic: "Vertical u horizontal", type: "lesson" },
+                    { id: 17, title: "Tamaño de Papel", topic: "Carta, oficio, A4...", type: "lesson" },
+                    { id: 18, title: "Marca de Agua", topic: "Texto de fondo como BORRADOR", type: "lesson" },
+                    { id: 19, title: "Color de Página", topic: "Fondos de página personalizados", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "Demuestra tu dominio de párrafos", type: "boss" },
+                ]
+            },
+            {
+                id: 4,
+                title: "Módulo 4: Insertar Objetos",
+                subtitle: "Enriquece tu documento",
+                emoji: "🎨",
+                color: "#FF9600",
+                colorDark: "#D47E00",
+                bgClass: "from-orange-400 to-amber-600",
+                missions: [
+                    { id: 1, title: "Insertar Tablas", topic: "Crea tablas organizadas", type: "lesson" },
+                    { id: 2, title: "Editar Tablas", topic: "Filas, columnas y celdas", type: "lesson" },
+                    { id: 3, title: "Diseño de Tablas", topic: "Estilos y bordes de tabla", type: "lesson" },
+                    { id: 4, title: "Insertar Imágenes", topic: "Agrega fotos y gráficos", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Tablas e Imágenes", topic: "Repaso de tablas e imágenes", type: "checkpoint" },
+                    { id: 6, title: "Ajustar Imágenes", topic: "Posición y ajuste de texto", type: "lesson" },
+                    { id: 7, title: "Formas", topic: "Rectángulos, flechas y más", type: "lesson" },
+                    { id: 8, title: "Cuadros de Texto", topic: "Texto flotante en cualquier lugar", type: "lesson" },
+                    { id: 9, title: "SmartArt", topic: "Diagramas y organigramas", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Objetos", topic: "Repaso de objetos gráficos", type: "checkpoint" },
+                    { id: 11, title: "Encabezados", topic: "Contenido repetido arriba", type: "lesson" },
+                    { id: 12, title: "Pies de Página", topic: "Contenido repetido abajo", type: "lesson" },
+                    { id: 13, title: "Números de Página", topic: "Pagina tu documento", type: "lesson" },
+                    { id: 14, title: "Hipervínculos", topic: "Enlaces a web y documentos", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Navegación", topic: "Repaso de encabezados y enlaces", type: "checkpoint" },
+                    { id: 16, title: "Símbolos", topic: "Caracteres especiales ©®™", type: "lesson" },
+                    { id: 17, title: "Ecuaciones", topic: "Fórmulas matemáticas", type: "lesson" },
+                    { id: 18, title: "Gráficos", topic: "Visualiza datos con gráficos", type: "lesson" },
+                    { id: 19, title: "Portada", topic: "Portadas profesionales", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "Demuestra tu dominio de objetos", type: "boss" },
+                ]
+            },
+            {
+                id: 5,
+                title: "Módulo 5: Herramientas Pro",
+                subtitle: "Conviértete en experto",
+                emoji: "🏆",
+                color: "#FF4B4B",
+                colorDark: "#EA2B2B",
+                bgClass: "from-red-400 to-rose-600",
+                missions: [
+                    { id: 1, title: "Estilos Rápidos", topic: "Título 1, Título 2, Normal...", type: "lesson" },
+                    { id: 2, title: "Crear Estilos", topic: "Define tus propios estilos", type: "lesson" },
+                    { id: 3, title: "Tabla de Contenido", topic: "Índice automático", type: "lesson" },
+                    { id: 4, title: "Notas al Pie", topic: "Referencias al pie de página", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Estilos", topic: "Repaso de estilos y TOC", type: "checkpoint" },
+                    { id: 6, title: "Revisión Ortográfica", topic: "Corrector ortográfico avanzado", type: "lesson" },
+                    { id: 7, title: "Sinónimos", topic: "Tesauro y alternativas", type: "lesson" },
+                    { id: 8, title: "Comentarios", topic: "Añade notas de revisión", type: "lesson" },
+                    { id: 9, title: "Control de Cambios", topic: "Rastrea ediciones del equipo", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Revisión", topic: "Repaso de herramientas de revisión", type: "checkpoint" },
+                    { id: 11, title: "Combinar Correspondencia", topic: "Cartas personalizadas masivas", type: "lesson" },
+                    { id: 12, title: "Macros Básicas", topic: "Automatiza tareas repetitivas", type: "lesson" },
+                    { id: 13, title: "Plantillas", topic: "Usa y crea plantillas", type: "lesson" },
+                    { id: 14, title: "Proteger Documento", topic: "Contraseñas y restricciones", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Automatización", topic: "Repaso de herramientas avanzadas", type: "checkpoint" },
+                    { id: 16, title: "Exportar a PDF", topic: "Convierte a PDF profesional", type: "lesson" },
+                    { id: 17, title: "Compartir en Nube", topic: "OneDrive y colaboración", type: "lesson" },
+                    { id: 18, title: "Accesibilidad", topic: "Documentos accesibles para todos", type: "lesson" },
+                    { id: 19, title: "Tips de Productividad", topic: "Secretos de los expertos", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "¡Eres un maestro de Word!", type: "boss" },
+                ]
+            }
+        ];
+
+        // ========== EXCEL MODULES DATA ==========
+        const EXCEL_MODULES_DATA = [
+            {
+                id: 1,
+                title: "Módulo 1: Fundamentos",
+                subtitle: "Primeros pasos con Excel",
+                emoji: "📊",
+                color: "#58CC02",
+                colorDark: "#46A302",
+                bgClass: "from-green-400 to-emerald-600",
+                missions: [
+                    { id: 1, title: "La Interfaz de Excel", topic: "Conoce las partes principales de Excel", type: "lesson" },
+                    { id: 2, title: "Celdas y Rangos", topic: "La unidad básica de Excel", type: "lesson" },
+                    { id: 3, title: "Escribir en Celdas", topic: "Ingresa datos en las celdas", type: "lesson" },
+                    { id: 4, title: "Guardar Libro", topic: "Guarda tu libro de trabajo", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Básicos", topic: "Repaso de lo aprendido", type: "checkpoint" },
+                    { id: 6, title: "Seleccionar Celdas", topic: "Selecciona celdas y rangos", type: "lesson" },
+                    { id: 7, title: "Copiar y Pegar", topic: "Copia datos entre celdas", type: "lesson" },
+                    { id: 8, title: "Mover Datos", topic: "Mueve datos arrastrando celdas", type: "lesson" },
+                    { id: 9, title: "Deshacer y Rehacer", topic: "Corrige tus errores fácilmente", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Edición", topic: "Repaso de edición básica", type: "checkpoint" },
+                    { id: 11, title: "Filas y Columnas", topic: "Insertar y eliminar filas/columnas", type: "lesson" },
+                    { id: 12, title: "Ancho y Alto", topic: "Ajusta el tamaño de celdas", type: "lesson" },
+                    { id: 13, title: "Hojas de Cálculo", topic: "Agrega y renombra hojas", type: "lesson" },
+                    { id: 14, title: "Navegación", topic: "Muévete rápido por la hoja", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Estructura", topic: "Repaso de estructura", type: "checkpoint" },
+                    { id: 16, title: "Tipos de Datos", topic: "Texto, números y fechas", type: "lesson" },
+                    { id: 17, title: "Autorrelleno", topic: "Rellena series automáticamente", type: "lesson" },
+                    { id: 18, title: "Buscar y Reemplazar", topic: "Encuentra datos rápidamente", type: "lesson" },
+                    { id: 19, title: "Inmovilizar Paneles", topic: "Fija filas y columnas al desplazar", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "Demuestra lo que sabes", type: "boss" },
+                ]
+            },
+            {
+                id: 2,
+                title: "Módulo 2: Formato de Celdas",
+                subtitle: "Dale estilo a tus datos",
+                emoji: "🎨",
+                color: "#1CB0F6",
+                colorDark: "#1899D6",
+                bgClass: "from-blue-400 to-cyan-600",
+                missions: [
+                    { id: 1, title: "Negrita y Cursiva", topic: "Resalta texto en celdas", type: "lesson" },
+                    { id: 2, title: "Tamaño de Fuente", topic: "Cambia el tamaño del texto", type: "lesson" },
+                    { id: 3, title: "Color de Fuente", topic: "Dale color a tus datos", type: "lesson" },
+                    { id: 4, title: "Color de Relleno", topic: "Colorea el fondo de celdas", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Texto", topic: "Repaso de formato de texto", type: "checkpoint" },
+                    { id: 6, title: "Bordes de Celda", topic: "Añade líneas a las celdas", type: "lesson" },
+                    { id: 7, title: "Alineación", topic: "Alinea texto en la celda", type: "lesson" },
+                    { id: 8, title: "Combinar Celdas", topic: "Une varias celdas en una", type: "lesson" },
+                    { id: 9, title: "Ajustar Texto", topic: "Texto en varias líneas", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Diseño", topic: "Repaso de diseño de celdas", type: "checkpoint" },
+                    { id: 11, title: "Formato Número", topic: "Muestra números con decimales", type: "lesson" },
+                    { id: 12, title: "Formato Moneda", topic: "Muestra valores como dinero", type: "lesson" },
+                    { id: 13, title: "Formato Porcentaje", topic: "Convierte a porcentaje", type: "lesson" },
+                    { id: 14, title: "Formato Fecha", topic: "Muestra fechas correctamente", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Números", topic: "Repaso de formatos numéricos", type: "checkpoint" },
+                    { id: 16, title: "Estilos de Celda", topic: "Estilos predefinidos rápidos", type: "lesson" },
+                    { id: 17, title: "Formato Condicional", topic: "Colores automáticos por valor", type: "lesson" },
+                    { id: 18, title: "Copiar Formato", topic: "Copia el estilo entre celdas", type: "lesson" },
+                    { id: 19, title: "Temas y Colores", topic: "Cambia el tema del libro", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "Demuestra tu dominio del formato", type: "boss" },
+                ]
+            },
+            {
+                id: 3,
+                title: "Módulo 3: Fórmulas Básicas",
+                subtitle: "Aprende a calcular",
+                emoji: "🔢",
+                color: "#CE82FF",
+                colorDark: "#A568CC",
+                bgClass: "from-purple-400 to-violet-600",
+                missions: [
+                    { id: 1, title: "Tu Primera Fórmula", topic: "Suma dos celdas con =", type: "lesson" },
+                    { id: 2, title: "Suma +", topic: "Suma valores con +", type: "lesson" },
+                    { id: 3, title: "Resta -", topic: "Resta valores con -", type: "lesson" },
+                    { id: 4, title: "Multiplicación *", topic: "Multiplica con *", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Operaciones", topic: "Repaso de operaciones básicas", type: "checkpoint" },
+                    { id: 6, title: "División /", topic: "Divide valores con /", type: "lesson" },
+                    { id: 7, title: "Función SUMA", topic: "Suma rangos con SUMA()", type: "lesson" },
+                    { id: 8, title: "Función PROMEDIO", topic: "Calcula el promedio", type: "lesson" },
+                    { id: 9, title: "Función MAX y MIN", topic: "Encuentra el mayor y menor", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Funciones", topic: "Repaso de funciones básicas", type: "checkpoint" },
+                    { id: 11, title: "Función CONTAR", topic: "Cuenta celdas con números", type: "lesson" },
+                    { id: 12, title: "Función CONTARA", topic: "Cuenta celdas no vacías", type: "lesson" },
+                    { id: 13, title: "Referencias Relativas", topic: "Celdas que cambian al copiar", type: "lesson" },
+                    { id: 14, title: "Referencias Absolutas", topic: "Fija celdas con $", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Referencias", topic: "Repaso de referencias", type: "checkpoint" },
+                    { id: 16, title: "Autosuma", topic: "El botón mágico de sumar", type: "lesson" },
+                    { id: 17, title: "Errores Comunes", topic: "Resuelve #REF!, #DIV/0! y más", type: "lesson" },
+                    { id: 18, title: "Orden de Operaciones", topic: "Paréntesis y prioridad", type: "lesson" },
+                    { id: 19, title: "Fórmulas con Texto", topic: "CONCATENAR y &", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "Demuestra tu dominio de fórmulas", type: "boss" },
+                ]
+            },
+            {
+                id: 4,
+                title: "Módulo 4: Gráficos y Datos",
+                subtitle: "Visualiza tu información",
+                emoji: "📈",
+                color: "#FF9600",
+                colorDark: "#D47E00",
+                bgClass: "from-orange-400 to-amber-600",
+                missions: [
+                    { id: 1, title: "Tu Primer Gráfico", topic: "Crea un gráfico de barras", type: "lesson" },
+                    { id: 2, title: "Gráfico Circular", topic: "Gráficos de pastel/torta", type: "lesson" },
+                    { id: 3, title: "Gráfico de Líneas", topic: "Muestra tendencias con líneas", type: "lesson" },
+                    { id: 4, title: "Editar Gráficos", topic: "Personaliza títulos y colores", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Gráficos", topic: "Repaso de gráficos básicos", type: "checkpoint" },
+                    { id: 6, title: "Ordenar Datos", topic: "Ordena de A-Z o de menor a mayor", type: "lesson" },
+                    { id: 7, title: "Filtrar Datos", topic: "Muestra solo lo que necesitas", type: "lesson" },
+                    { id: 8, title: "Tablas de Excel", topic: "Convierte rangos en tablas", type: "lesson" },
+                    { id: 9, title: "Estilos de Tabla", topic: "Dale formato a tus tablas", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Tablas", topic: "Repaso de tablas y filtros", type: "checkpoint" },
+                    { id: 11, title: "Validación de Datos", topic: "Controla qué se puede escribir", type: "lesson" },
+                    { id: 12, title: "Listas Desplegables", topic: "Menús de opciones en celdas", type: "lesson" },
+                    { id: 13, title: "Comentarios", topic: "Agrega notas a las celdas", type: "lesson" },
+                    { id: 14, title: "Imprimir Hojas", topic: "Prepara tu hoja para imprimir", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Herramientas", topic: "Repaso de herramientas de datos", type: "checkpoint" },
+                    { id: 16, title: "Área de Impresión", topic: "Define qué imprimir", type: "lesson" },
+                    { id: 17, title: "Encabezados", topic: "Repite encabezados al imprimir", type: "lesson" },
+                    { id: 18, title: "Insertar Imágenes", topic: "Agrega imágenes a tu hoja", type: "lesson" },
+                    { id: 19, title: "Insertar Formas", topic: "Flechas y recuadros decorativos", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "Demuestra tu dominio de datos", type: "boss" },
+                ]
+            },
+            {
+                id: 5,
+                title: "Módulo 5: Funciones Avanzadas",
+                subtitle: "Conviértete en experto",
+                emoji: "🏆",
+                color: "#FF4B4B",
+                colorDark: "#EA2B2B",
+                bgClass: "from-red-400 to-rose-600",
+                missions: [
+                    { id: 1, title: "Función SI", topic: "Decisiones con SI()", type: "lesson" },
+                    { id: 2, title: "SI Anidado", topic: "Varias condiciones con SI", type: "lesson" },
+                    { id: 3, title: "BUSCARV", topic: "Busca datos en tablas", type: "lesson" },
+                    { id: 4, title: "BUSCARH", topic: "Busca datos en filas", type: "lesson" },
+                    { id: 5, title: "Checkpoint: Búsqueda", topic: "Repaso de funciones lógicas", type: "checkpoint" },
+                    { id: 6, title: "SUMAR.SI", topic: "Suma con condiciones", type: "lesson" },
+                    { id: 7, title: "CONTAR.SI", topic: "Cuenta con condiciones", type: "lesson" },
+                    { id: 8, title: "Función HOY", topic: "La fecha de hoy automática", type: "lesson" },
+                    { id: 9, title: "Función AÑO/MES/DIA", topic: "Extrae partes de fechas", type: "lesson" },
+                    { id: 10, title: "Checkpoint: Especiales", topic: "Repaso de funciones especiales", type: "checkpoint" },
+                    { id: 11, title: "Tablas Dinámicas", topic: "Resume datos automáticamente", type: "lesson" },
+                    { id: 12, title: "Campos Dinámicos", topic: "Configura filas y columnas", type: "lesson" },
+                    { id: 13, title: "Gráficos Dinámicos", topic: "Gráficos desde tablas dinámicas", type: "lesson" },
+                    { id: 14, title: "Proteger Hojas", topic: "Bloquea celdas importantes", type: "lesson" },
+                    { id: 15, title: "Checkpoint: Dinámicas", topic: "Repaso de tablas dinámicas", type: "checkpoint" },
+                    { id: 16, title: "Exportar a PDF", topic: "Convierte a PDF profesional", type: "lesson" },
+                    { id: 17, title: "Compartir en Nube", topic: "OneDrive y colaboración", type: "lesson" },
+                    { id: 18, title: "Macros Básicas", topic: "Automatiza tareas repetitivas", type: "lesson" },
+                    { id: 19, title: "Tips de Productividad", topic: "Secretos de los expertos", type: "lesson" },
+                    { id: 20, title: "Examen Final", topic: "¡Eres un maestro de Excel!", type: "boss" },
+                ]
+            }
+        ];
+
+        // ========== PROGRESS MANAGER ==========
+        const getProgress = (tool = 'word') => {
+            try {
+                const saved = localStorage.getItem(`ofilingo_progress_${tool}_v2`);
+                return saved ? JSON.parse(saved) : {};
+            } catch { return {}; }
+        };
+
+        const saveProgress = (data, tool = 'word') => {
+            localStorage.setItem(`ofilingo_progress_${tool}_v2`, JSON.stringify(data));
+        };
+
+        const getStats = () => {
+            try {
+                const saved = localStorage.getItem('ofilingo_stats');
+                return saved ? JSON.parse(saved) : { streak: 1, gems: 50, hearts: 5, xp: 0 };
+            } catch { return { streak: 1, gems: 50, hearts: 5, xp: 0 }; }
+        };
+
+        const getMissionStatus = (progress, moduleId, missionId) => {
+            const key = `${moduleId}-${missionId}`;
+            const data = progress[key];
+            if (!data) {
+                // First mission of first module is always available
+                if (moduleId === 1 && missionId === 1) return 'available';
+                // Check if previous mission is completed
+                const prevMission = missionId > 1 ? missionId - 1 : null;
+                const prevModule = missionId === 1 && moduleId > 1 ? moduleId - 1 : null;
+                if (prevMission) {
+                    const prevKey = `${moduleId}-${prevMission}`;
+                    const prevData = progress[prevKey];
+                    if (prevData && prevData.completed) return 'available';
+                } else if (prevModule) {
+                    const prevKey = `${prevModule}-20`;
+                    const prevData = progress[prevKey];
+                    if (prevData && prevData.completed) return 'available';
+                }
+                return 'locked';
+            }
+            if (data.completed) return 'completed';
+            if (data.theoryDone) return 'theory-done';
+            return 'available';
+        };
+
+        const getMissionStars = (progress, moduleId, missionId) => {
+            const key = `${moduleId}-${missionId}`;
+            return progress[key]?.stars || 0;
+        };
+
+        const getModuleProgress = (progress, moduleId) => {
+            let completed = 0;
+            for (let i = 1; i <= 20; i++) {
+                const key = `${moduleId}-${i}`;
+                if (progress[key]?.completed) completed++;
+            }
+            return completed;
+        };
+
+        // ========== COMPONENTS ==========
+        const ProfileModal = ({ profile, onClose, onSave }) => {
+            const [name, setName] = useState(profile.name);
+            const [seed, setSeed] = useState(profile.avatarSeed);
+            const SEEDS = ['Felix', 'Aneka', 'Mittens', 'Peanut', 'Oliver', 'Mimi', 'Snickers', 'Boots'];
+            return (
+                <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-center p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:bg-gray-100 p-2 rounded-full"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>
+                        <h2 className="text-2xl font-black text-textMain mb-4">Tu Perfil</h2>
+                        <div className="flex justify-center mb-4">
+                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} alt="avatar" className="w-24 h-24 rounded-full bg-gray-100 border-4 border-duoGreen" />
+                        </div>
+                        <label className="font-bold text-sm text-textGray mb-1">Nombre</label>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} className="border-2 border-gray-200 rounded-xl p-3 mb-4 font-bold text-textMain outline-none focus:border-duoBlue" />
+                        <label className="font-bold text-sm text-textGray mb-2">Elige un Avatar</label>
+                        <div className="grid grid-cols-4 gap-2 mb-6">
+                            {SEEDS.map(s => (
+                                <div key={s} onClick={() => setSeed(s)} className={`cursor-pointer rounded-xl border-2 p-1 flex justify-center items-center ${seed === s ? 'border-duoBlue bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${s}`} alt={s} className="w-12 h-12" />
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => { onSave({ name, avatarSeed: seed }); onClose(); }} className="w-full py-3 bg-duoGreen text-white rounded-2xl font-bold uppercase tracking-wider border-b-4 border-duoGreenDark active-push">Guardar Perfil</button>
+                    </motion.div>
+                </div>
+            );
+        };
+
+
+        const SideNav = () => (
+            <nav className="hidden sm:flex flex-col w-64 h-screen fixed left-0 top-0 border-r-2 border-gray-100 p-6 pt-8 z-50 bg-white">
+                <h1 className="text-3xl font-black text-duoGreen mb-10 pl-2">ofilingo</h1>
+                <div className="flex flex-col gap-2">
+                    <a href="#" className="flex items-center gap-4 text-duoBlue bg-blue-50 border-2 border-blue-100 p-3 rounded-2xl font-bold uppercase tracking-wide">
+                        <HomeIcon /> Aprender
+                    </a>
+                    <a href="#" className="flex items-center gap-4 text-textGray hover:bg-gray-100 p-3 rounded-2xl font-bold uppercase tracking-wide transition-colors">
+                        <ShieldIcon /> Ligas
+                    </a>
+                    <a href="#" className="flex items-center gap-4 text-textGray hover:bg-gray-100 p-3 rounded-2xl font-bold uppercase tracking-wide transition-colors">
+                        <TargetIcon /> Misiones
+                    </a>
+                    <a href="#" className="flex items-center gap-4 text-textGray hover:bg-gray-100 p-3 rounded-2xl font-bold uppercase tracking-wide transition-colors">
+                        <StoreIcon /> Tienda
+                    </a>
+                    <a href="#" className="flex items-center gap-4 text-textGray hover:bg-gray-100 p-3 rounded-2xl font-bold uppercase tracking-wide transition-colors">
+                        <div className="w-7 h-7 rounded-full border-2 border-textGray overflow-hidden">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar" />
+                        </div>
+                        Perfil
+                    </a>
+                </div>
+            </nav>
+        );
+
+        const MobileTopBar = ({ stats }) => (
+            <header className="sticky top-0 bg-white/95 backdrop-blur-md z-40 border-b-2 border-gray-100 flex sm:hidden justify-between items-center py-3 px-4 shadow-sm">
+                <h1 className="text-xl font-black text-duoGreen">ofilingo</h1>
+                <div className="flex items-center gap-3 font-bold text-sm">
+                    <div className="flex items-center gap-1 text-duoYellow"><FlameIcon /> {stats.streak}</div>
+                    <div className="flex items-center gap-1 text-duoBlue"><GemIcon /> {stats.gems}</div>
+                    <div className="flex items-center gap-1 text-duoRed"><HeartIcon /> {stats.hearts}</div>
+                </div>
+            </header>
+        );
+
+        const MobileBottomNav = () => (
+            <nav className="fixed bottom-0 left-0 w-full bg-white border-t-2 border-gray-200 sm:hidden z-50 flex justify-around p-3 pb-6">
+                <a href="#" className="p-2 text-duoBlue bg-blue-50 rounded-xl"><HomeIcon /></a>
+                <a href="#" className="p-2 text-textGray hover:bg-gray-100 rounded-xl"><ShieldIcon /></a>
+                <a href="#" className="p-2 text-textGray hover:bg-gray-100 rounded-xl"><TargetIcon /></a>
+                <a href="#" className="p-2 text-textGray hover:bg-gray-100 rounded-xl"><StoreIcon /></a>
+            </nav>
+        );
+
+        const DesktopTopBar = ({ stats }) => (
+            <header className="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b-2 border-gray-100 hidden sm:flex justify-end py-3 px-6">
+                <div className="flex items-center gap-8 font-bold text-lg">
+                    <div className="flex items-center gap-2 text-duoYellow hover:bg-gray-100 p-2 rounded-xl cursor-pointer transition-colors">
+                        <FlameIcon /> {stats.streak}
+                    </div>
+                    <div className="flex items-center gap-2 text-duoBlue hover:bg-gray-100 p-2 rounded-xl cursor-pointer transition-colors">
+                        <GemIcon /> {stats.gems}
+                    </div>
+                    <div className="flex items-center gap-2 text-duoRed hover:bg-gray-100 p-2 rounded-xl cursor-pointer transition-colors">
+                        <HeartIcon /> {stats.hearts}
+                    </div>
+                </div>
+            </header>
+        );
+
+        const RightSidebar = ({ stats, progress }) => {
+            const totalCompleted = Object.values(progress).filter(p => p.completed).length;
+            const totalMissions = 100;
+            return (
+                <aside className="hidden lg:flex flex-col w-80 fixed right-0 top-0 h-screen p-8 pt-24 gap-6 overflow-y-auto">
+                    {/* Profile Card */}
+                    <div className="border-2 border-gray-200 rounded-2xl p-5">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-duoGreen to-emerald-400 flex items-center justify-center text-2xl shadow-md">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar" className="rounded-full" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-textMain text-lg">Estudiante</h3>
+                                <p className="text-textGray text-sm font-bold">{stats.xp} XP Total</p>
+                            </div>
+                        </div>
+                        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-duoGreen to-emerald-400 rounded-full transition-all duration-500"
+                                style={{ width: `${(totalCompleted / totalMissions) * 100}%` }} />
+                        </div>
+                        <p className="text-xs text-textGray font-bold mt-2">{totalCompleted}/{totalMissions} misiones completadas</p>
+                    </div>
+
+                    {/* Daily Goals */}
+                    <div className="border-2 border-gray-200 rounded-2xl p-5">
+                        <h3 className="font-bold text-lg text-textMain mb-3 flex items-center gap-2">
+                            <CrownIcon /> Metas Diarias
+                        </h3>
+                        <div className="flex flex-col gap-3">
+                            <div className="flex gap-3 items-center">
+                                <div className="text-duoYellow"><StarIcon size={24} /></div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-sm">Completa 3 misiones</h4>
+                                    <div className="h-3 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                                        <div className="h-full bg-duoYellow rounded-full" style={{ width: '33%' }} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 items-center">
+                                <div className="text-wordBlue font-black text-lg">W</div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-sm">Gana 50 XP</h4>
+                                    <div className="h-3 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                                        <div className="h-full bg-wordBlue rounded-full" style={{ width: `${Math.min(100, (stats.xp % 50) * 2)}%` }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            );
+        };
+
+        // ========== MISSION NODE ==========
+        const MissionNode = ({ mission, moduleId, moduleColor, moduleColorDark, status, stars, onSelect, index }) => {
+            const isLocked = status === 'locked';
+            const isAvailable = status === 'available';
+            const isTheoryDone = status === 'theory-done';
+            const isCompleted = status === 'completed';
+            const isCheckpoint = mission.type === 'checkpoint';
+            const isBoss = mission.type === 'boss';
+
+            // Zigzag positioning
+            const offsets = [0, -45, -60, -40, 0, 40, 60, 45, 0, -45, -60, -40, 0, 40, 60, 45, 0, -45, -30, 0];
+            const offset = offsets[index % 20];
+
+            const nodeSize = isCheckpoint ? 'w-[72px] h-[72px] sm:w-[84px] sm:h-[84px]' : isBoss ? 'w-[76px] h-[76px] sm:w-[88px] sm:h-[88px]' : 'w-16 h-16 sm:w-[76px] sm:h-[76px]';
+
+            let bgStyle = {};
+            let borderColor = '';
+            let content = null;
+
+            if (isLocked) {
+                bgStyle = { background: '#E5E5E5' };
+                borderColor = '#CECECE';
+                content = <LockIcon />;
+            } else if (isCompleted) {
+                bgStyle = { background: moduleColor };
+                borderColor = moduleColorDark;
+                content = stars >= 3 ? <StarIcon size={28} fill="#FFC800" stroke="#D4A600" /> :
+                    stars >= 2 ? <StarIcon size={28} fill="#FFC800" stroke="#D4A600" /> :
+                        <CheckCircleIcon />;
+            } else if (isTheoryDone) {
+                bgStyle = { background: `linear-gradient(135deg, ${moduleColor}, ${moduleColorDark})` };
+                borderColor = moduleColorDark;
+                content = <BookIcon />;
+            } else if (isAvailable) {
+                bgStyle = { background: moduleColor };
+                borderColor = moduleColorDark;
+                content = isCheckpoint ? '🏁' : isBoss ? <TrophyIcon /> : <span className="text-2xl">▶</span>;
+            }
+
+            return (
+                <div className="relative flex justify-center w-full" style={{ marginBottom: '12px' }}>
+                    <div className="relative z-10" style={{ marginLeft: `${offset}px` }}>
+                        {/* Tooltip for available */}
+                        {isAvailable && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="absolute -top-14 left-1/2 -translate-x-1/2 bg-white border-2 border-gray-200 px-3 py-1.5 rounded-xl shadow-md text-xs font-bold whitespace-nowrap cursor-pointer z-20"
+                            >
+                                <span className="text-textMain">¡Empezar!</span>
+                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border-b-2 border-r-2 border-gray-200 transform rotate-45" />
+                            </motion.div>
+                        )}
+
+                        {/* Stars display for completed */}
+                        {isCompleted && stars > 0 && (
+                            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 flex gap-0.5 z-20">
+                                {[1, 2, 3].map(s => (
+                                    <StarIcon key={s} size={14}
+                                        fill={s <= stars ? "#FFC800" : "#E5E5E5"}
+                                        stroke={s <= stars ? "#D4A600" : "#CCC"}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        <motion.button
+                            onClick={() => !isLocked && onSelect(mission, moduleId)}
+                            whileHover={!isLocked ? { scale: 1.08 } : {}}
+                            whileTap={!isLocked ? { scale: 0.95 } : {}}
+                            animate={isAvailable ? { y: [0, -5, 0] } : {}}
+                            transition={isAvailable ? { repeat: Infinity, duration: 2, ease: "easeInOut" } : {}}
+                            className={`${nodeSize} rounded-full flex items-center justify-center text-white relative transition-all
+                                ${isLocked ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
+                                ${isCheckpoint ? 'ring-4 ring-offset-2' : ''}
+                                ${isBoss ? 'ring-4 ring-offset-2' : ''}
+                            `}
+                            style={{
+                                ...bgStyle,
+                                borderBottom: `4px solid ${borderColor}`,
+                                ...(isCheckpoint ? { ringColor: moduleColor + '40' } : {}),
+                                ...(isBoss ? { ringColor: '#FFC80060' } : {}),
+                            }}
+                        >
+                            {/* 3D highlight */}
+                            <div className="absolute top-1.5 left-2 right-2 h-2 bg-white/20 rounded-full" />
+                            {content}
+
+                            {/* Progress ring for available */}
+                            {(isAvailable || isTheoryDone) && (
+                                <svg className="absolute w-[calc(100%+16px)] h-[calc(100%+16px)] -top-2 -left-2" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                                    <circle cx="50" cy="50" r="46" fill="transparent" stroke="#E5E5E5" strokeWidth="6" />
+                                    <circle cx="50" cy="50" r="46" fill="transparent" stroke={isTheoryDone ? moduleColor : "#FFC800"} strokeWidth="6"
+                                        strokeDasharray="289" strokeDashoffset={isTheoryDone ? "145" : "250"} strokeLinecap="round" />
+                                </svg>
+                            )}
+
+                            {/* Checkpoint/Boss decorations */}
+                            {isCheckpoint && !isLocked && (
+                                <div className="absolute -inset-1 rounded-full border-2 border-dashed animate-spin" style={{ borderColor: moduleColor + '50', animationDuration: '10s' }} />
+                            )}
+                        </motion.button>
+                    </div>
+                </div>
+            );
+        };
+
+        // ========== MODULE SECTION ==========
+        const ModuleSection = ({ module, progress, onSelectMission }) => {
+            const completedCount = getModuleProgress(progress, module.id);
+            const isModuleComplete = completedCount === 20;
+            const progressPercent = (completedCount / 20) * 100;
+
+            return (
+                <div className="w-full flex flex-col mb-8 relative">
+                    {/* Module Header */}
+                    <div className={`bg-gradient-to-r ${module.bgClass} rounded-2xl p-4 sm:p-6 mb-6 text-white flex items-center justify-between shadow-lg relative overflow-hidden`}>
+                        <div className="absolute inset-0 shimmer pointer-events-none" />
+                        <div className="flex items-center gap-4 z-10">
+                            <div className="text-3xl sm:text-4xl">{module.emoji}</div>
+                            <div>
+                                <h2 className="text-lg sm:text-xl font-black">{module.title}</h2>
+                                <p className="font-bold opacity-90 text-xs sm:text-sm">{module.subtitle}</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 z-10">
+                            {isModuleComplete && (
+                                <div className="bg-white/20 px-3 py-1 rounded-full flex items-center gap-1 text-xs font-bold">
+                                    <CrownIcon /> ¡Completado!
+                                </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                                <div className="w-24 sm:w-32 h-3 bg-white/20 rounded-full overflow-hidden">
+                                    <div className="h-full bg-white/80 rounded-full transition-all duration-700"
+                                        style={{ width: `${progressPercent}%` }} />
+                                </div>
+                                <span className="text-xs font-bold opacity-90">{completedCount}/20</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Mission Path */}
+                    <div className="flex flex-col items-center w-full relative pt-2 pb-4">
+                        {/* Vertical line */}
+                        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-3 bg-gray-100 rounded-full -z-10" />
+
+                        {module.missions.map((mission, i) => {
+                            const status = getMissionStatus(progress, module.id, mission.id);
+                            const stars = getMissionStars(progress, module.id, mission.id);
+                            return (
+                                <MissionNode
+                                    key={mission.id}
+                                    mission={mission}
+                                    moduleId={module.id}
+                                    moduleColor={module.color}
+                                    moduleColorDark={module.colorDark}
+                                    status={status}
+                                    stars={stars}
+                                    onSelect={onSelectMission}
+                                    index={i}
+                                />
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // ========== MISSION MODAL ==========
+        const MissionModal = ({ mission, moduleId, module, progress, onClose, tool }) => {
+            if (!mission) return null;
+            const status = getMissionStatus(progress, moduleId, mission.id);
+            const stars = getMissionStars(progress, moduleId, mission.id);
+            const isTheoryDone = status === 'theory-done' || status === 'completed';
+            const isCompleted = status === 'completed';
+            const isCheckpoint = mission.type === 'checkpoint';
+            const isBoss = mission.type === 'boss';
+
+            const goToLesson = (phase) => {
+                window.location.href = `ofilingo.html?module=${moduleId}&mission=${mission.id}&phase=${phase}&tool=${tool}`;
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-end sm:items-center p-4 sm:p-0"
+                    onClick={(e) => e.target === e.currentTarget && onClose()}>
+                    <motion.div
+                        initial={{ y: "100%", opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: "100%", opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="bg-white w-full sm:w-[420px] rounded-3xl p-6 flex flex-col shadow-2xl relative"
+                    >
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+
+                        {/* Header */}
+                        <div className="flex items-center gap-3 mb-1 mt-1">
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-black shadow-md"
+                                style={{ background: module.color }}>
+                                {isCheckpoint ? '🏁' : isBoss ? '🏆' : mission.id}
+                            </div>
+                            <div>
+                                <p className="text-textGray font-bold text-xs uppercase tracking-wider">{module.title}</p>
+                                <h2 className="text-xl font-black text-textMain">{mission.title}</h2>
+                            </div>
+                        </div>
+
+                        <p className="text-textGray font-semibold text-sm mb-5 ml-1">{mission.topic}</p>
+
+                        {/* Stars */}
+                        {isCompleted && (
+                            <div className="flex justify-center gap-2 mb-5">
+                                {[1, 2, 3].map(s => (
+                                    <motion.div key={s} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: s * 0.15 }}>
+                                        <StarIcon size={32} fill={s <= stars ? "#FFC800" : "#E5E5E5"} stroke={s <= stars ? "#D4A600" : "#CCC"} />
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => goToLesson('theory')}
+                                className={`w-full py-4 text-lg rounded-2xl font-bold uppercase tracking-wider border-b-4 active-push transition-all flex items-center justify-center gap-3
+                                    ${isTheoryDone
+                                        ? 'bg-gray-100 text-textGray border-gray-200'
+                                        : 'text-white shadow-md'
+                                    }`}
+                                style={!isTheoryDone ? { background: module.color, borderColor: module.colorDark } : {}}
+                            >
+                                <BookIcon />
+                                {isTheoryDone ? '✓ Teoría Completada' : 'Fase 1: Teoría'}
+                            </button>
+
+                            <button
+                                onClick={() => isTheoryDone ? goToLesson('practice') : null}
+                                disabled={!isTheoryDone}
+                                className={`w-full py-4 text-lg rounded-2xl font-bold uppercase tracking-wider border-b-4 active-push transition-all flex items-center justify-center gap-3
+                                    ${!isTheoryDone
+                                        ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed'
+                                        : isCompleted
+                                            ? 'bg-white border-2 border-gray-200 text-textMain hover:bg-gray-50'
+                                            : 'text-white shadow-md'
+                                    }`}
+                                style={isTheoryDone && !isCompleted ? { background: '#1CB0F6', borderColor: '#1899D6' } : {}}
+                            >
+                                <PencilIcon />
+                                {isCompleted ? '↻ Repetir Práctica' : !isTheoryDone ? '🔒 Primero la Teoría' : 'Fase 2: Práctica'}
+                            </button>
+                        </div>
+
+                        {!isTheoryDone && (
+                            <p className="text-center text-textGray text-xs font-semibold mt-3">
+                                Completa la teoría para desbloquear la práctica
+                            </p>
+                        )}
+                    </motion.div>
+                </div>
+            );
+        };
+
+        // ========== TOOL SELECTOR ==========
+        const ToolSelector = ({ selectedTool, onSelectTool }) => (
+            <div className="mb-8">
+                <h2 className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-3 text-center sm:text-left">Elige tu herramienta</h2>
+                <div className="flex gap-3 sm:gap-4">
+                    <motion.button
+                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => onSelectTool('word')}
+                        className={`flex-1 flex items-center gap-3 p-4 rounded-2xl border-2 border-b-4 font-bold transition-all ${
+                            selectedTool === 'word'
+                                ? 'border-wordBlue bg-blue-50 text-wordBlue shadow-md'
+                                : 'border-gray-200 text-textGray hover:bg-gray-50'
+                        }`}
+                    >
+                        <WordLogo />
+                        <div className="text-left">
+                            <p className="font-black text-sm sm:text-base">Word</p>
+                            <p className="text-xs opacity-70">Documentos</p>
+                        </div>
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => onSelectTool('excel')}
+                        className={`flex-1 flex items-center gap-3 p-4 rounded-2xl border-2 border-b-4 font-bold transition-all ${
+                            selectedTool === 'excel'
+                                ? 'border-excelGreen bg-green-50 text-excelGreen shadow-md'
+                                : 'border-gray-200 text-textGray hover:bg-gray-50'
+                        }`}
+                    >
+                        <ExcelLogo />
+                        <div className="text-left">
+                            <p className="font-black text-sm sm:text-base">Excel</p>
+                            <p className="text-xs opacity-70">Hojas de cálculo</p>
+                        </div>
+                    </motion.button>
+                </div>
+            </div>
+        );
+
+        // ========== LEAGUE VIEW ==========
+        const LeagueView = ({ userProfile, stats }) => {
+            const mockPlayers = [
+                { name: 'Sofía M.', xp: 2450, seed: 'Sophia' },
+                { name: 'Carlos R.', xp: 1890, seed: 'Carlos' },
+                { name: 'Valentina L.', xp: 1750, seed: 'Valentina' },
+                { name: 'Diego P.', xp: 1200, seed: 'Diego' },
+                { name: 'Isabella G.', xp: 980, seed: 'Isabella' },
+                { name: 'Mateo S.', xp: 820, seed: 'Mateo' },
+                { name: 'Camila V.', xp: 650, seed: 'Camila' },
+                { name: 'Andrés F.', xp: 430, seed: 'Andres' },
+                { name: 'Luciana B.', xp: 310, seed: 'Luciana' }
+            ];
+            const allPlayers = [...mockPlayers, { name: userProfile?.name || 'Tú', xp: stats?.xp || 0, seed: userProfile?.avatarSeed || 'Felix', isUser: true }];
+            allPlayers.sort((a, b) => b.xp - a.xp);
+            const medals = ['🥇', '🥈', '🥉'];
+            return (
+                <div className="w-full max-w-2xl mx-auto px-4 sm:px-8 py-8 sm:py-10 pb-32">
+                    <div className="text-center mb-8">
+                        <div className="text-5xl mb-2">🏆</div>
+                        <h1 className="text-2xl font-black" style={{color:'var(--text)'}}>Liga Bronce</h1>
+                        <p className="font-bold" style={{color:'var(--text-gray)'}}>Top 10 de la semana</p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        {allPlayers.map((p, i) => (
+                            <motion.div key={p.name} initial={{x:-20,opacity:0}} animate={{x:0,opacity:1}} transition={{delay:i*0.05}}
+                                className={`flex items-center gap-4 p-4 rounded-2xl border-2 ${p.isUser?'border-duoBlue bg-blue-50/50 shadow-md':''}`}
+                                style={!p.isUser?{borderColor:'var(--border)',background:'var(--bg-card)'}:{}}>
+                                <span className="font-black text-lg w-8 text-center" style={{color: i<3?'':p.isUser?'#1CB0F6':'var(--text-gray)'}}>
+                                    {i < 3 ? medals[i] : (i + 1)}
+                                </span>
+                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.seed}`} alt="" className="w-10 h-10 rounded-full" style={{background:'var(--border-light)'}} />
+                                <span className="flex-1 font-bold" style={{color: p.isUser?'#1CB0F6':'var(--text)'}}>{p.name} {p.isUser ? '(Tú)' : ''}</span>
+                                <span className="font-black text-duoYellow">{p.xp} XP</span>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // ========== DARK MODE ICON ==========
+        const SunIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+        const MoonIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
+        const UserIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+        const UsersIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+
+        // ========== STUDENT SYSTEM ==========
+        const getStudents = () => { try { return JSON.parse(localStorage.getItem('ofilingo_students')) || []; } catch { return []; } };
+        const saveStudents = (s) => localStorage.setItem('ofilingo_students', JSON.stringify(s));
+        const getActiveStudent = () => localStorage.getItem('ofilingo_active_student');
+        const setActiveStudent = (id) => localStorage.setItem('ofilingo_active_student', id);
+        const getStudentData = (id) => { try { return JSON.parse(localStorage.getItem(`ofilingo_student_${id}`)) || null; } catch { return null; } };
+        const saveStudentData = (id, data) => localStorage.setItem(`ofilingo_student_${id}`, JSON.stringify(data));
+
+        const createStudent = (name, avatarSeed) => {
+            const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            const students = getStudents();
+            students.push({ id, name, avatarSeed, createdAt: new Date().toISOString() });
+            saveStudents(students);
+            saveStudentData(id, { profile: { name, avatarSeed }, stats: { streak: 1, gems: 50, hearts: 5, xp: 0 }, progress_word: {}, progress_excel: {} });
+            setActiveStudent(id);
+            return id;
+        };
+
+        // ========== STUDENT SELECTOR ==========
+        const StudentSelector = ({ onSelect }) => {
+            const [students, setStudentsList] = useState(getStudents);
+            const [creating, setCreating] = useState(students.length === 0);
+            const [newName, setNewName] = useState('');
+            const [newSeed, setNewSeed] = useState('Felix');
+            const SEEDS = ['Felix', 'Aneka', 'Mittens', 'Peanut', 'Oliver', 'Mimi', 'Snickers', 'Boots'];
+
+            const handleCreate = () => {
+                if (!newName.trim()) return;
+                const id = createStudent(newName.trim(), newSeed);
+                onSelect(id);
+            };
+
+            const handleSelect = (id) => { setActiveStudent(id); onSelect(id); };
+
+            if (creating) return (
+                <div className="min-h-screen flex items-center justify-center p-6" style={{background:'var(--bg)'}}>
+                    <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} className="w-full max-w-sm rounded-3xl p-8 shadow-2xl border-2" style={{background:'var(--bg-card)',borderColor:'var(--border)'}}>
+                        <h1 className="text-3xl font-black text-center mb-2" style={{color:'var(--text)'}}>¡Bienvenido a OfiLingo!</h1>
+                        <p className="text-center font-bold mb-6" style={{color:'var(--text-gray)'}}>Crea tu perfil de estudiante</p>
+                        <div className="flex justify-center mb-4">
+                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${newSeed}`} alt="avatar" className="w-20 h-20 rounded-full border-4 border-duoGreen" style={{background:'var(--border-light)'}} />
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 mb-4">
+                            {SEEDS.map(s => (
+                                <div key={s} onClick={()=>setNewSeed(s)} className={`cursor-pointer rounded-xl border-2 p-1 flex justify-center ${newSeed===s?'border-duoBlue':'hover:opacity-80'}`} style={{borderColor:newSeed===s?'':'var(--border)'}}>
+                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${s}`} alt={s} className="w-10 h-10" />
+                                </div>
+                            ))}
+                        </div>
+                        <input type="text" value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Tu nombre..." className="w-full border-2 rounded-xl p-3 mb-4 font-bold outline-none focus:border-duoBlue" style={{background:'var(--bg)',borderColor:'var(--border)',color:'var(--text)'}} onKeyDown={e=>{if(e.key==='Enter')handleCreate();}} />
+                        <button onClick={handleCreate} disabled={!newName.trim()} className={`w-full py-3 rounded-2xl font-bold uppercase tracking-wider border-b-4 active-push ${newName.trim()?'bg-duoGreen text-white border-duoGreenDark':'bg-gray-200 text-gray-400 border-gray-300'}`}>Crear Perfil</button>
+                        {students.length > 0 && <button onClick={()=>setCreating(false)} className="w-full mt-3 py-2 font-bold rounded-xl" style={{color:'var(--text-gray)'}}>← Seleccionar existente</button>}
+                    </motion.div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-6" style={{background:'var(--bg)'}}>
+                    <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} className="w-full max-w-sm rounded-3xl p-8 shadow-2xl border-2" style={{background:'var(--bg-card)',borderColor:'var(--border)'}}>
+                        <h1 className="text-2xl font-black text-center mb-1" style={{color:'var(--text)'}}>OfiLingo</h1>
+                        <p className="text-center font-bold mb-6" style={{color:'var(--text-gray)'}}>¿Quién eres?</p>
+                        <div className="flex flex-col gap-3 mb-4">
+                            {students.map(s => (
+                                <motion.button key={s.id} whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={()=>handleSelect(s.id)}
+                                    className="flex items-center gap-4 p-4 rounded-2xl border-2 border-b-4 font-bold transition-all hover:shadow-md" style={{background:'var(--bg-card)',borderColor:'var(--border)',color:'var(--text)'}}>
+                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${s.avatarSeed}`} alt="avatar" className="w-12 h-12 rounded-full" style={{background:'var(--border-light)'}} />
+                                    <span className="flex-1 text-left text-lg">{s.name}</span>
+                                    <span style={{color:'var(--text-gray)'}}>▶</span>
+                                </motion.button>
+                            ))}
+                        </div>
+                        <button onClick={()=>setCreating(true)} className="w-full py-3 bg-duoBlue text-white rounded-2xl font-bold border-b-4 border-duoBlueDark active-push">+ Nuevo Estudiante</button>
+                    </motion.div>
+                </div>
+            );
+        };
+
+        // ========== TEACHER PANEL ==========
+        const TeacherPanel = ({ onClose }) => {
+            const students = getStudents();
+            return (
+                <div className="fixed inset-0 z-[100] flex justify-center items-center p-4" style={{background:'rgba(0,0,0,0.6)'}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+                    <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} className="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-3xl p-6 shadow-2xl" style={{background:'var(--bg-card)'}}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-black" style={{color:'var(--text)'}}>📋 Panel del Maestro</h2>
+                            <button onClick={onClose} className="p-2 rounded-full" style={{color:'var(--text-gray)'}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                        </div>
+                        {students.length===0 ? <p className="text-center py-8 font-bold" style={{color:'var(--text-gray)'}}>No hay estudiantes registrados</p> : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead><tr className="border-b-2" style={{borderColor:'var(--border)'}}>
+                                        <th className="p-3 font-black" style={{color:'var(--text-gray)'}}>Estudiante</th>
+                                        <th className="p-3 font-black text-center" style={{color:'var(--text-gray)'}}>XP</th>
+                                        <th className="p-3 font-black text-center" style={{color:'var(--text-gray)'}}>Word</th>
+                                        <th className="p-3 font-black text-center" style={{color:'var(--text-gray)'}}>Excel</th>
+                                        <th className="p-3 font-black text-center" style={{color:'var(--text-gray)'}}>Racha</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        {students.map(s => {
+                                            const data = getStudentData(s.id);
+                                            if(!data) return null;
+                                            const wordDone = Object.values(data.progress_word||{}).filter(p=>p.completed).length;
+                                            const excelDone = Object.values(data.progress_excel||{}).filter(p=>p.completed).length;
+                                            return (
+                                                <tr key={s.id} className="border-b" style={{borderColor:'var(--border-light)'}}>
+                                                    <td className="p-3"><div className="flex items-center gap-3">
+                                                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${s.avatarSeed}`} alt="" className="w-8 h-8 rounded-full" />
+                                                        <span className="font-bold" style={{color:'var(--text)'}}>{s.name}</span>
+                                                    </div></td>
+                                                    <td className="p-3 text-center font-black text-duoYellow">{data.stats?.xp||0}</td>
+                                                    <td className="p-3 text-center font-bold" style={{color:'var(--text)'}}>{wordDone}/100</td>
+                                                    <td className="p-3 text-center font-bold" style={{color:'var(--text)'}}>{excelDone}/100</td>
+                                                    <td className="p-3 text-center font-bold text-duoYellow">🔥 {data.stats?.streak||0}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </motion.div>
+                </div>
+            );
+        };
+
+        // ========== PROFILE VIEW ==========
+        const ProfileView = ({ profile, stats, progress, onSaveProfile, darkMode, onToggleDark, onLogout, onShowTeacher }) => {
+            const [editing, setEditing] = useState(false);
+            const totalWord = Object.values(getProgress('word')).filter(p=>p.completed).length;
+            const totalExcel = Object.values(getProgress('excel')).filter(p=>p.completed).length;
+            return (
+                <div className="w-full max-w-2xl mx-auto px-4 sm:px-8 py-8 sm:py-10 pb-32">
+                    <div className="flex flex-col items-center mb-8">
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.avatarSeed}`} alt="avatar" className="w-24 h-24 rounded-full border-4 border-duoGreen mb-3" style={{background:'var(--border-light)'}} />
+                        <h1 className="text-2xl font-black" style={{color:'var(--text)'}}>{profile.name}</h1>
+                        <p className="font-bold" style={{color:'var(--text-gray)'}}>{stats.xp} XP Total</p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                        {[{l:'Racha',v:`🔥 ${stats.streak}`,c:'text-duoYellow'},{l:'Gemas',v:stats.gems,c:'text-duoBlue'},{l:'Word',v:`${totalWord}/100`,c:'text-wordBlue'},{l:'Excel',v:`${totalExcel}/100`,c:'text-excelGreen'}].map((s,i) => (
+                            <div key={i} className="rounded-2xl border-2 p-4 text-center" style={{borderColor:'var(--border)',background:'var(--bg-card)'}}>
+                                <p className="text-xs font-bold uppercase" style={{color:'var(--text-gray)'}}>{s.l}</p>
+                                <p className={`text-xl font-black ${s.c}`}>{s.v}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex flex-col gap-3">
+                        <button onClick={()=>setEditing(true)} className="w-full p-4 rounded-2xl border-2 border-b-4 font-bold flex items-center gap-3 active-push" style={{borderColor:'var(--border)',background:'var(--bg-card)',color:'var(--text)'}}>
+                            <UserIcon /> Editar Perfil
+                        </button>
+                        <button onClick={onToggleDark} className="w-full p-4 rounded-2xl border-2 border-b-4 font-bold flex items-center gap-3 active-push" style={{borderColor:'var(--border)',background:'var(--bg-card)',color:'var(--text)'}}>
+                            {darkMode ? <SunIcon /> : <MoonIcon />} {darkMode ? 'Modo Claro' : 'Modo Oscuro'}
+                        </button>
+                        <button onClick={onShowTeacher} className="w-full p-4 rounded-2xl border-2 border-b-4 font-bold flex items-center gap-3 active-push" style={{borderColor:'var(--border)',background:'var(--bg-card)',color:'var(--text)'}}>
+                            <UsersIcon /> Panel del Maestro
+                        </button>
+                        <button onClick={onLogout} className="w-full p-4 rounded-2xl border-2 border-b-4 font-bold flex items-center gap-3 text-duoRed active-push" style={{borderColor:'var(--border)',background:'var(--bg-card)'}}>
+                            ↩ Cambiar Estudiante
+                        </button>
+                    </div>
+                    {editing && <ProfileModal profile={profile} onClose={()=>setEditing(false)} onSave={onSaveProfile} />}
+                </div>
+            );
+        };
+
+        // ========== APP ==========
+        function App() {
+            const [studentId, setStudentId] = useState(() => getActiveStudent());
+            const [darkMode, setDarkMode] = useState(() => localStorage.getItem('ofilingo_dark_mode') === 'true');
+            const [view, setView] = useState('learn'); // learn, league, profile
+            const [selectedTool, setSelectedTool] = useState(() => localStorage.getItem('ofilingo_selected_tool') || 'word');
+            const [selectedMission, setSelectedMission] = useState(null);
+            const [selectedModuleId, setSelectedModuleId] = useState(null);
+            const [showTeacher, setShowTeacher] = useState(false);
+
+            // Student data
+            const studentData = studentId ? getStudentData(studentId) : null;
+            const [profile, setProfile] = useState(() => studentData?.profile || { name: 'Estudiante', avatarSeed: 'Felix' });
+            const [stats, setStats] = useState(() => studentData?.stats || { streak: 1, gems: 50, hearts: 5, xp: 0 });
+            const [progress, setProgress] = useState(() => {
+                if (studentData) return selectedTool === 'excel' ? (studentData.progress_excel || {}) : (studentData.progress_word || {});
+                return getProgress(selectedTool);
+            });
+
+            useEffect(() => { document.body.classList.toggle('dark', darkMode); }, [darkMode]);
+
+            const toggleDark = () => {
+                const next = !darkMode; setDarkMode(next);
+                localStorage.setItem('ofilingo_dark_mode', next.toString());
+            };
+
+            const syncStudentData = () => {
+                if (!studentId) return;
+                const data = getStudentData(studentId);
+                if (data) {
+                    setProfile(data.profile); setStats(data.stats);
+                    setProgress(selectedTool === 'excel' ? (data.progress_excel||{}) : (data.progress_word||{}));
+                }
+            };
+
+            const handleToolChange = (tool) => {
+                setSelectedTool(tool);
+                localStorage.setItem('ofilingo_selected_tool', tool);
+                if (studentId) {
+                    const data = getStudentData(studentId);
+                    if (data) setProgress(tool === 'excel' ? (data.progress_excel||{}) : (data.progress_word||{}));
+                } else { setProgress(getProgress(tool)); }
+                setSelectedMission(null); setSelectedModuleId(null);
+            };
+
+            useEffect(() => {
+                const handleFocus = () => {
+                    if (studentId) {
+                        const data = getStudentData(studentId);
+                        if (data) { setStats(data.stats); setProgress(selectedTool==='excel'?(data.progress_excel||{}):(data.progress_word||{})); }
+                    } else {
+                        const tool = localStorage.getItem('ofilingo_selected_tool') || 'word';
+                        setSelectedTool(tool); setProgress(getProgress(tool)); setStats(getStats());
+                    }
+                };
+                window.addEventListener('focus', handleFocus);
+                return () => window.removeEventListener('focus', handleFocus);
+            }, [studentId, selectedTool]);
+
+            const handleSelectMission = (mission, moduleId) => { setSelectedMission(mission); setSelectedModuleId(moduleId); };
+            const handleSaveProfile = (p) => {
+                setProfile(p);
+                if (studentId) {
+                    const data = getStudentData(studentId); data.profile = p; saveStudentData(studentId, data);
+                    const students = getStudents(); const s = students.find(s=>s.id===studentId);
+                    if(s){s.name=p.name;s.avatarSeed=p.avatarSeed;saveStudents(students);}
+                }
+            };
+
+            const handleLogout = () => { localStorage.removeItem('ofilingo_active_student'); setStudentId(null); };
+            const handleStudentSelect = (id) => { setStudentId(id); syncStudentData(); window.location.reload(); };
+
+            if (!studentId) return <StudentSelector onSelect={handleStudentSelect} />;
+
+            const currentModules = selectedTool === 'excel' ? EXCEL_MODULES_DATA : MODULES_DATA;
+            const selectedModule = selectedModuleId ? currentModules.find(m => m.id === selectedModuleId) : null;
+            const isExcel = selectedTool === 'excel';
+            const navItems = [
+                {id:'learn',icon:<HomeIcon />,label:'Aprender'},
+                {id:'league',icon:<ShieldIcon />,label:'Ligas'},
+                {id:'profile',icon:<UserIcon />,label:'Perfil'}
+            ];
+
+            return (
+                <div className="min-h-screen flex relative" style={{color:'var(--text)'}}>
+                    <AnimatePresence>
+                        {selectedMission && (
+                            <MissionModal mission={selectedMission} moduleId={selectedModuleId} module={selectedModule} progress={progress}
+                                onClose={() => { setSelectedMission(null); setSelectedModuleId(null); }} tool={selectedTool} />
+                        )}
+                    </AnimatePresence>
+                    {showTeacher && <TeacherPanel onClose={()=>setShowTeacher(false)} />}
+
+                    {/* Side Nav */}
+                    <nav className="hidden sm:flex flex-col w-64 h-screen fixed left-0 top-0 border-r-2 p-6 pt-8 z-50" style={{background:'var(--bg-sidebar)',borderColor:'var(--border)'}}>
+                        <h1 className="text-3xl font-black text-duoGreen mb-10 pl-2">ofilingo</h1>
+                        <div className="flex flex-col gap-2">
+                            {navItems.map(n => (
+                                <button key={n.id} onClick={()=>setView(n.id)} className={`flex items-center gap-4 p-3 rounded-2xl font-bold uppercase tracking-wide transition-colors text-left
+                                    ${view===n.id?'text-duoBlue bg-blue-50 border-2 border-blue-100':''}`}
+                                    style={view!==n.id?{color:'var(--text-gray)'}:{}}>
+                                    {n.icon} {n.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mt-auto">
+                            <button onClick={toggleDark} className="flex items-center gap-3 p-3 rounded-2xl font-bold w-full transition-colors" style={{color:'var(--text-gray)'}}>
+                                {darkMode ? <SunIcon /> : <MoonIcon />} {darkMode ? 'Claro' : 'Oscuro'}
+                            </button>
+                        </div>
+                    </nav>
+
+                    <div className="flex-1 sm:ml-64 lg:mr-80" style={{background:'var(--bg)'}}>
+                        {/* Desktop Top Bar */}
+                        <header className="sticky top-0 backdrop-blur-md z-40 border-b-2 hidden sm:flex justify-end py-3 px-6" style={{background:'var(--bg)',borderColor:'var(--border)'}}>
+                            <div className="flex items-center gap-8 font-bold text-lg">
+                                <div className="flex items-center gap-2 text-duoYellow p-2 rounded-xl cursor-pointer"><FlameIcon /> {stats.streak}</div>
+                                <div className="flex items-center gap-2 text-duoBlue p-2 rounded-xl cursor-pointer"><GemIcon /> {stats.gems}</div>
+                                <div className="flex items-center gap-2 text-duoRed p-2 rounded-xl cursor-pointer"><HeartIcon /> {stats.hearts}</div>
+                            </div>
+                        </header>
+                        {/* Mobile Top Bar */}
+                        <header className="sticky top-0 backdrop-blur-md z-40 border-b-2 flex sm:hidden justify-between items-center py-3 px-4 shadow-sm" style={{background:'var(--bg)',borderColor:'var(--border)'}}>
+                            <h1 className="text-xl font-black text-duoGreen">ofilingo</h1>
+                            <div className="flex items-center gap-3 font-bold text-sm">
+                                <div className="flex items-center gap-1 text-duoYellow"><FlameIcon /> {stats.streak}</div>
+                                <div className="flex items-center gap-1 text-duoBlue"><GemIcon /> {stats.gems}</div>
+                                <div className="flex items-center gap-1 text-duoRed"><HeartIcon /> {stats.hearts}</div>
+                            </div>
+                        </header>
+
+                        {view === 'learn' && (
+                            <main className="w-full max-w-2xl mx-auto px-4 sm:px-8 py-8 sm:py-10 pb-32">
+                                <ToolSelector selectedTool={selectedTool} onSelectTool={handleToolChange} />
+                                <div className="mb-8 text-center sm:text-left">
+                                    <h2 className="font-bold uppercase tracking-widest text-xs mb-2" style={{color:'var(--text-gray)'}}>Tu Ruta de Aprendizaje</h2>
+                                    <div className="flex items-center gap-3 justify-center sm:justify-start">
+                                        {isExcel ? <ExcelLogo /> : <WordLogo />}
+                                        <div>
+                                            <h1 className="text-2xl sm:text-3xl font-black" style={{color:'var(--text)'}}>
+                                                Domina <span className={isExcel?'text-excelGreen':'text-wordBlue'}>{isExcel?'Microsoft Excel':'Microsoft Word'}</span>
+                                            </h1>
+                                            <p className="font-bold text-sm" style={{color:'var(--text-gray)'}}>100 misiones • 5 módulos</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {currentModules.map(module => (
+                                    <ModuleSection key={`${selectedTool}-${module.id}`} module={module} progress={progress} onSelectMission={handleSelectMission} />
+                                ))}
+                            </main>
+                        )}
+
+                        {view === 'league' && <LeagueView userProfile={profile} stats={stats} />}
+                        {view === 'profile' && <ProfileView profile={profile} stats={stats} progress={progress} onSaveProfile={handleSaveProfile} darkMode={darkMode} onToggleDark={toggleDark} onLogout={handleLogout} onShowTeacher={()=>setShowTeacher(true)} />}
+                    </div>
+
+                    {/* Right Sidebar */}
+                    <aside className="hidden lg:flex flex-col w-80 fixed right-0 top-0 h-screen p-8 pt-24 gap-6 overflow-y-auto" style={{borderLeft:`2px solid var(--border)`,background:'var(--bg-sidebar)'}}>
+                        <div className="border-2 rounded-2xl p-5" style={{borderColor:'var(--border)',background:'var(--bg-card)'}}>
+                            <div className="flex items-center gap-4 mb-4">
+                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.avatarSeed}`} alt="avatar" className="w-14 h-14 rounded-full shadow-md" style={{background:'var(--border-light)'}} />
+                                <div>
+                                    <h3 className="font-black text-lg" style={{color:'var(--text)'}}>{profile.name}</h3>
+                                    <p className="text-sm font-bold" style={{color:'var(--text-gray)'}}>{stats.xp} XP Total</p>
+                                </div>
+                            </div>
+                            <div className="h-3 rounded-full overflow-hidden" style={{background:'var(--border-light)'}}>
+                                <div className="h-full bg-gradient-to-r from-duoGreen to-emerald-400 rounded-full transition-all duration-500"
+                                    style={{ width: `${(Object.values(progress).filter(p=>p.completed).length / 100) * 100}%` }} />
+                            </div>
+                            <p className="text-xs font-bold mt-2" style={{color:'var(--text-gray)'}}>{Object.values(progress).filter(p=>p.completed).length}/100 misiones</p>
+                        </div>
+                        <div className="border-2 rounded-2xl p-5" style={{borderColor:'var(--border)',background:'var(--bg-card)'}}>
+                            <h3 className="font-bold text-lg mb-3 flex items-center gap-2" style={{color:'var(--text)'}}><CrownIcon /> Metas Diarias</h3>
+                            <div className="flex flex-col gap-3">
+                                <div className="flex gap-3 items-center"><div className="text-duoYellow"><StarIcon size={24} /></div>
+                                    <div className="flex-1"><h4 className="font-bold text-sm" style={{color:'var(--text)'}}>Completa 3 misiones</h4>
+                                    <div className="h-3 rounded-full mt-1 overflow-hidden" style={{background:'var(--border-light)'}}><div className="h-full bg-duoYellow rounded-full" style={{width:'33%'}} /></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* Mobile Bottom Nav */}
+                    <nav className="fixed bottom-0 left-0 w-full border-t-2 sm:hidden z-50 flex justify-around p-3 pb-6" style={{background:'var(--bg)',borderColor:'var(--border)'}}>
+                        {navItems.map(n => (
+                            <button key={n.id} onClick={()=>setView(n.id)} className={`p-2 rounded-xl ${view===n.id?'text-duoBlue bg-blue-50':''}`} style={view!==n.id?{color:'var(--text-gray)'}:{}}>
+                                {n.icon}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
